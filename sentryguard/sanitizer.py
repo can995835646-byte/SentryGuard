@@ -11,6 +11,19 @@ _BASE64_PIPE = re.compile(
     r"[^\n]*base64\s+-d\s*\|\s*(?:ba)?sh[^\n]*",
     re.IGNORECASE,
 )
+_SYSTEM_PROMPT_PHRASE = re.compile(
+    r"(?:\[SYSTEM\]\s*:|<<SYS>>|<\|system\|>|<\|im_start\|>\s*system\b"
+    r"|\[INST\]\s*\[SYS\]|\bSYSTEM\s+OVERRIDE\s*:|\bADMIN\s+(?:OVERRIDE|MODE)\s*:"
+    r"|\bDEVELOPER\s+MODE\s+ENABLED\b)"
+    r"[^.!?\n]*(?:[.!?]\s*)?",
+    re.IGNORECASE,
+)
+_PROMPT_OVERRIDE_PHRASE = re.compile(
+    r"(?:ignore\s+(?:previous|all|above)\b|disregard\s+(?:your|all)\b"
+    r"|you\s+are\s+now\b|forget\s+(?:your|all)\b)"
+    r"[^.!?\n]*[.!?]?",
+    re.IGNORECASE,
+)
 _SUSPICIOUS_EXTRA_KEYS = frozenset(
     {"shell_exec", "__command__", "__exec__", "run_command", "execute_shell"}
 )
@@ -32,6 +45,8 @@ def sanitize_text(text: str) -> Tuple[str, List[str]]:
     text = _strip(_CODE_BLOCK, "code_block", text)
     text = _strip(_BASE64_PIPE, "base64_pipe", text)
     text = _strip(_INLINE_CMD_CHAIN, "cmd_chain", text)
+    text = _strip(_SYSTEM_PROMPT_PHRASE, "system_prompt", text)
+    text = _strip(_PROMPT_OVERRIDE_PHRASE, "prompt_override", text)
     return text, removed
 
 

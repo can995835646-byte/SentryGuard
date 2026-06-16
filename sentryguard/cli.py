@@ -130,7 +130,8 @@ def cli():
 @click.option("--pro", is_flag=True, default=False, envvar="SENTRYGUARD_PRO", help="Enable Pro mode (removes free-tier limits)")
 @click.option("--demo", is_flag=True, default=False, help="Run against built-in sample events (no Sentry token needed)")
 @click.option("--file", "input_file", default=None, type=click.Path(exists=True), help="Load events from a local JSON file instead of Sentry API")
-def scan(org, token, project, limit, output, threats_only, pro, demo, input_file):
+@click.option("--save", "save_file", default=None, type=click.Path(), help="Write JSON/CSV output to a UTF-8 file (avoids Windows encoding issues with shell redirection)")
+def scan(org, token, project, limit, output, threats_only, pro, demo, input_file, save_file):
     """Scan Sentry events for Agentjacking prompt injection threats."""
 
     # ── Source selection ──────────────────────────────────────────
@@ -173,7 +174,8 @@ def scan(org, token, project, limit, output, threats_only, pro, demo, input_file
 
     # ── Output ────────────────────────────────────────────────────
     if output == "json":
-        click.echo(json.dumps([r.to_dict() for r in results], indent=2))
+        content = json.dumps([r.to_dict() for r in results], indent=2)
+        _emit(content, save_file)
 
     elif output == "csv":
         buf = io.StringIO()
@@ -183,13 +185,22 @@ def scan(org, token, project, limit, output, threats_only, pro, demo, input_file
             row = r.to_dict()
             row["detected_patterns"] = "|".join(row["detected_patterns"])
             writer.writerow(row)
-        click.echo(buf.getvalue())
+        _emit(buf.getvalue(), save_file)
 
     else:
         _print_table(results)
 
     if any(r.threat_level == "high" for r in results):
         sys.exit(1)
+
+
+def _emit(content: str, save_file: str | None) -> None:
+    if save_file:
+        with open(save_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        click.echo(f"[OK] Output written to {save_file}", err=True)
+    else:
+        click.echo(content)
 
 
 def _print_table(results):
