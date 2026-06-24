@@ -1,11 +1,35 @@
+import json
 import sys
+from datetime import date
+from pathlib import Path
+
 import requests
 
 SENTRY_BASE = "https://sentry.io/api/0"
 FREE_LIMIT = 100
 FREE_DAILY_CALLS = 3
 
-_call_count = 0
+_USAGE_FILE = Path.home() / ".sentryguard" / "usage.json"
+
+
+def _get_today_count() -> int:
+    try:
+        data = json.loads(_USAGE_FILE.read_text(encoding="utf-8"))
+        if data.get("date") == str(date.today()):
+            return data.get("count", 0)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return 0
+
+
+def _increment_today_count() -> int:
+    count = _get_today_count() + 1
+    _USAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _USAGE_FILE.write_text(
+        json.dumps({"date": str(date.today()), "count": count}),
+        encoding="utf-8",
+    )
+    return count
 
 
 def _headers(token: str) -> dict:
@@ -34,16 +58,14 @@ def verify_connection(org: str, token: str) -> None:
 
 def fetch_events(org: str, token: str, project: str | None, limit: int, pro: bool) -> list:
     """Fetch error events from Sentry. Enforces free-tier limits."""
-    global _call_count
-
     effective_limit = limit if pro else min(limit, FREE_LIMIT)
 
     if not pro:
-        _call_count += 1
-        if _call_count > FREE_DAILY_CALLS:
+        count = _increment_today_count()
+        if count > FREE_DAILY_CALLS:
             sys.exit(
                 f"✗ Free tier allows {FREE_DAILY_CALLS} scans per day. "
-                "Upgrade to Pro for unlimited scans: https://sentryguard.dev/pro"
+                "Activate your Pro license with: sentryguard activate <key>"
             )
 
     params: dict = {"limit": min(effective_limit, 100)}

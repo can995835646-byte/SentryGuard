@@ -7,6 +7,7 @@ import click
 
 from . import __version__
 from .detectors import detect
+from .license import activate as _activate_license, deactivate as _deactivate_license, is_pro
 from .sanitizer import sanitize_event
 from .sentry_api import fetch_events, verify_connection
 
@@ -127,12 +128,14 @@ def cli():
 @click.option("--limit", default=20, show_default=True, help="Number of events to scan (max 100 on free tier)")
 @click.option("--output", default="table", type=click.Choice(["table", "json", "csv"]), show_default=True, help="Output format")
 @click.option("--threats-only", is_flag=True, default=False, help="Only show events with detected threats")
-@click.option("--pro", is_flag=True, default=False, envvar="SENTRYGUARD_PRO", help="Enable Pro mode (removes free-tier limits)")
+@click.option("--pro", is_flag=True, default=False, envvar="SENTRYGUARD_PRO", help="Force Pro mode (CI/testing override; normally auto-detected from license)")
 @click.option("--demo", is_flag=True, default=False, help="Run against built-in sample events (no Sentry token needed)")
 @click.option("--file", "input_file", default=None, type=click.Path(exists=True), help="Load events from a local JSON file instead of Sentry API")
 @click.option("--save", "save_file", default=None, type=click.Path(), help="Write JSON/CSV output to a UTF-8 file (avoids Windows encoding issues with shell redirection)")
 def scan(org, token, project, limit, output, threats_only, pro, demo, input_file, save_file):
     """Scan Sentry events for Agentjacking prompt injection threats."""
+
+    pro = pro or is_pro()
 
     # ── Source selection ──────────────────────────────────────────
     if demo:
@@ -226,6 +229,22 @@ def _print_table(results):
             click.echo(click.style(f"  --> {preview}", fg=color, dim=True))
 
     click.echo()
+
+
+@cli.command()
+@click.argument("key")
+def activate(key):
+    """Activate SentryGuard Pro with your Gumroad license key."""
+    click.echo("Verifying license key ...", err=True)
+    _activate_license(key)
+    click.echo("[OK] Pro license activated. Enjoy unlimited scans!", err=True)
+
+
+@cli.command()
+def deactivate():
+    """Remove the stored Pro license key from this machine."""
+    _deactivate_license()
+    click.echo("[OK] License removed.", err=True)
 
 
 @cli.command()

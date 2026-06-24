@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentryguard"
-version = "0.2.0"
+version = "0.3.0"
 description = "Detect Agentjacking prompt injection attacks in Sentry error events"
 readme = "README.md"
 license = "MIT"
@@ -31,8 +31,8 @@ dependencies = [
 sentryguard = "sentryguard.cli:cli"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/sentryguard"
-"Bug Tracker" = "https://github.com/yourusername/sentryguard/issues"
+Homepage = "https://github.com/can995835646-byte/sentryguard"
+"Bug Tracker" = "https://github.com/can995835646-byte/sentryguard/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
