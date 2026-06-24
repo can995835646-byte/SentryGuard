@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentryguard"
-version = "0.3.0"
+version = "0.3.1"
 description = "Detect Agentjacking prompt injection attacks in Sentry error events"
 readme = "README.md"
 license = "MIT"

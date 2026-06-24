@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 
 GUMROAD_VERIFY_URL = "https://api.gumroad.com/v2/licenses/verify"
-PRODUCT_ID = "dfnxw"
+PRODUCT_ID = "wqXlVKcKuObx0YnUUFcdAg=="
 LICENSE_FILE = Path.home() / ".sentryguard" / "license.json"
 VERIFY_INTERVAL_HOURS = 24
 
